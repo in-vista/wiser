@@ -309,13 +309,6 @@ export class Grids {
                     text: "",
                     template: `<div class="counterContainer"><span class="counter">0</span> <span class="plural">resultaten</span><span class="singular" style="display: none;">resultaat</span></div>`
                 });
-            } else {
-                toolbar.push({
-                    name: "whitespace",
-                    iconClass: "",
-                    text: "",
-                    template: `<div class="counterContainer"></div>`
-                });
             }
 
             if (!gridViewSettings.toolbar || !gridViewSettings.toolbar.hideExportButton) {
@@ -482,6 +475,8 @@ export class Grids {
                     filterable: true,
                     allPages: true
                 },
+                columnResize: (event) => this.saveGridViewColumnsState(`main_grid_columns_${this.base.settings.moduleId}`, event.sender),
+                columnReorder: (event) => this.saveGridViewColumnsState(`main_grid_columns_${this.base.settings.moduleId}`, event.sender),
                 columnHide: (event) => this.saveGridViewColumnsState(`main_grid_columns_${this.base.settings.moduleId}`, event.sender),
                 columnShow: (event) => this.saveGridViewColumnsState(`main_grid_columns_${this.base.settings.moduleId}`, event.sender),
                 dataBound: async (event) => {
@@ -648,18 +643,13 @@ export class Grids {
                     if (columns[savedColumnIndex].field === gridOptions.columns[tableColumnsIndex].field) {
                         gridOptions.columns[tableColumnsIndex].hidden = columns[savedColumnIndex].hidden;
                         gridOptions.columns[tableColumnsIndex].width = columns[savedColumnIndex].width;
-                        if (gridOptions.reorderable ?? false) {
-                            //Only re-arrange columns if there is a possibility for the user to arrange them
-                            let moveColumn = gridOptions.columns.splice(tableColumnsIndex,1)[0];
-                            gridOptions.columns.splice(savedColumnIndex, 0, moveColumn);                            
-                        }
+                        let moveColumn = gridOptions.columns.splice(tableColumnsIndex,1)[0];
+                        gridOptions.columns.splice(savedColumnIndex, 0, moveColumn);
                         break;
                     }
                 }
             }
-        } catch (error) {
-            console.error("Reading and setting grid settings failed:", error);
-        }
+        } catch (error) {}
     }
 
     /**

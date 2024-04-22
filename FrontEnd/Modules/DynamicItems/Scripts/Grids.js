@@ -325,10 +325,14 @@ export class Grids {
             }
 
             if ((!gridViewSettings.toolbar || !gridViewSettings.toolbar.hideCreateButton) && this.base.settings.permissions.canCreate) {
+                const createButtonSettings = gridViewSettings.toolbar.createButtonSettings;
+                const createButtonText = createButtonSettings?.text || 'Nieuw item toevoegen';
+                const createButtonIcon = createButtonSettings?.icon || 'plus';
+                
                 toolbar.push({
                     name: "add",
                     text: "Nieuw",
-                    template: `<a class='k-button k-button-icontext' href='\\#' onclick='return window.dynamicItems.dialogs.openCreateItemDialog(null, null, null, ${gridViewSettings.skipNameForNewItems})'><span class='k-icon k-i-file-add'></span>Nieuw item toevoegen</a>`
+                    template: `<a class='k-button k-button-icontext' href='\\#' onclick='return window.dynamicItems.dialogs.openCreateItemDialog(null, null, null, ${gridViewSettings.skipNameForNewItems})'><span class='k-icon k-i-${createButtonIcon}'></span>${createButtonText}</a>`
                 });
             }
 

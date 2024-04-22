@@ -518,11 +518,8 @@ export class Windows {
             const itemId = data.itemId;
             const inputData = this.base.fields.getInputData(popupWindowContainer.find(".right-pane-content-popup, .dynamicTabContent"));
 
-            let titleToSave = data.title || null;
-            if (titleField.is(":visible")) {
-                titleToSave = newTitle;
-            }
-            const promises = [this.base.updateItem(itemId, inputData, popupWindowContainer, isNewItemWindow, titleToSave, true, true, entityType.entityType || entityType.name)];
+            let titleToSave = newTitle || data.title || null;
+           const promises = [this.base.updateItem(itemId, inputData, popupWindowContainer, isNewItemWindow, titleToSave, true, true, entityType.entityType || entityType.name)];
 
             await Promise.all(promises);
 

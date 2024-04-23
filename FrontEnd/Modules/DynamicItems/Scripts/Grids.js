@@ -498,7 +498,7 @@ export class Grids {
                         update: async function(transportOptions) {
                             const data = transportOptions.data;
                             
-                            const result = await Wiser.api({
+                            const updateRequestResult = await Wiser.api({
                                 url: `${window.dynamicItems.settings.wiserApiRoot}items/${encodeURIComponent(data.encrypted_id)}/`,
                                 method: "PUT",
                                 contentType: "application/json",
@@ -509,8 +509,23 @@ export class Grids {
                                 kendo.alert(`Er is iets fout gegaan tijdens het opslaan van het veld '${title}'.<br>` + (errorThrown ? errorThrown : 'Probeer het a.u.b. nogmaals, of neem contact op met ons.'));
                                 transportOptions.error(jqXHR);
                             });
+                            
+                            const afterUpdateQueryId = gridViewSettings.afterUpdateQueryId;
+                            if(afterUpdateQueryId) {
+                                await Wiser.api({
+                                    url: `${window.dynamicItems.settings.wiserApiRoot}items/${encodeURIComponent(data.encrypted_id)}/action-button/0?queryId=${encodeURIComponent(afterUpdateQueryId)}`,
+                                    method: "POST",
+                                    contentType: "application/json",
+                                    dataType: "json",
+                                    data: JSON.stringify(data)
+                                }).catch(function (jqXHR, textStatus, errorThrown) {
+                                    console.error("UPDATE FAIL", textStatus, errorThrown, jqXHR);
+                                    kendo.alert(`Er is iets fout gegaan tijdens het opslaan van het veld '${title}'.<br>` + (errorThrown ? errorThrown : 'Probeer het a.u.b. nogmaals, of neem contact op met ons.'));
+                                    transportOptions.error(jqXHR);
+                                });
+                            }
 
-                            transportOptions.success(result);
+                            transportOptions.success(updateRequestResult);
                         }
                     },
                     schema: {

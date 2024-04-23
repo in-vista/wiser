@@ -373,31 +373,7 @@ export class Grids {
             delete gridViewSettings.toolbar;
 
             let columns = gridViewSettings.columns || [];
-
-            const editableGrid = columns.some(column => {
-                return typeof column.editable === 'boolean' && column.editable;
-            });
-
-            let editableGridOptions = false;
-            if(editableGrid) {
-                editableGridOptions = {
-                    'mode': 'incell'
-                }
-            }
-            
             if (columns) {
-                for(const column of columns) {
-                    const editable = column.editable || false;
-                    if (typeof editable === "boolean") {
-                        column.editable = function() {
-                            return editable;
-                        };
-                    } else if (column.editable) {
-                        console.warn("Column '" + (column.field || "") + "' has an invalid value in property 'editable':", column.editable);
-                        delete column.editable;
-                    }
-                }
-                
                 if (gridDataResult.columns && gridDataResult.columns.length > 0) {
                     for (let column of gridDataResult.columns) {
                         const filtered = columns.filter(c => (c.field || "").toLowerCase() === (column.field || "").toLowerCase());
@@ -425,7 +401,6 @@ export class Grids {
             let filtersChanged = false;
             const finalGridViewSettings = $.extend(true, {
                 dataSource: {
-                    autoSync: true,
                     serverPaging: !usingDataSelector && !gridViewSettings.clientSidePaging,
                     serverSorting: !usingDataSelector && !gridViewSettings.clientSideSorting,
                     serverFiltering: !usingDataSelector && !gridViewSettings.clientSideFiltering,
@@ -494,38 +469,6 @@ export class Grids {
                             }
 
                             window.processing.removeProcess(process);
-                        },
-                        update: async function(transportOptions) {
-                            const data = transportOptions.data;
-                            
-                            const updateRequestResult = await Wiser.api({
-                                url: `${window.dynamicItems.settings.wiserApiRoot}items/${encodeURIComponent(data.encrypted_id)}/`,
-                                method: "PUT",
-                                contentType: "application/json",
-                                dataType: "json",
-                                data: JSON.stringify(data)
-                            }).catch(function (jqXHR, textStatus, errorThrown) {
-                                console.error("UPDATE FAIL", textStatus, errorThrown, jqXHR);
-                                kendo.alert(`Er is iets fout gegaan tijdens het opslaan van het veld '${title}'.<br>` + (errorThrown ? errorThrown : 'Probeer het a.u.b. nogmaals, of neem contact op met ons.'));
-                                transportOptions.error(jqXHR);
-                            });
-                            
-                            const afterUpdateQueryId = gridViewSettings.afterUpdateQueryId;
-                            if(afterUpdateQueryId) {
-                                await Wiser.api({
-                                    url: `${window.dynamicItems.settings.wiserApiRoot}items/${encodeURIComponent(data.encrypted_id)}/action-button/0?queryId=${encodeURIComponent(afterUpdateQueryId)}`,
-                                    method: "POST",
-                                    contentType: "application/json",
-                                    dataType: "json",
-                                    data: JSON.stringify(data)
-                                }).catch(function (jqXHR, textStatus, errorThrown) {
-                                    console.error("UPDATE FAIL", textStatus, errorThrown, jqXHR);
-                                    kendo.alert(`Er is iets fout gegaan tijdens het opslaan van het veld '${title}'.<br>` + (errorThrown ? errorThrown : 'Probeer het a.u.b. nogmaals, of neem contact op met ons.'));
-                                    transportOptions.error(jqXHR);
-                                });
-                            }
-
-                            transportOptions.success(updateRequestResult);
                         }
                     },
                     schema: {
@@ -551,23 +494,14 @@ export class Grids {
                     counterContainer.find(".singular").toggle(totalCount === 1);
 
                     // To hide toolbar buttons that require a row to be selected.
-                    await this.onGridSelectionChange(event);
+                    this.onGridSelectionChange(event);
 
                     if (gridViewSettings.keepFiltersState !== false && filtersChanged) {
                         await this.saveGridViewFiltersState(`main_grid_filters_${this.base.settings.moduleId}`, event.sender);
                     }
                 },
-                save: function(event) {
-                    if(!editableGrid)
-                        return;
-
-                    event.sender.one("dataBound", function () {
-                        event.sender.dataSource.read();
-                    });
-                },
                 change: this.onGridSelectionChange.bind(this),
                 resizable: true,
-                editable: editableGridOptions,
                 sortable: true,
                 scrollable: usingDataSelector ? true : {
                     virtual: true
@@ -933,7 +867,6 @@ export class Grids {
         let isFirstLoad = true;
 
         const columns = data.columns;
-        
         if (columns && columns.length) {
             for (let column of columns) {
                 if (column.field) {

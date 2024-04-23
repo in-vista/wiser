@@ -495,25 +495,22 @@ export class Grids {
 
                             window.processing.removeProcess(process);
                         },
-                        update: function(transportOptions) {
+                        update: async function(transportOptions) {
                             const data = transportOptions.data;
                             
-                            Wiser.api({
+                            const result = await Wiser.api({
                                 url: `${window.dynamicItems.settings.wiserApiRoot}items/${encodeURIComponent(data.encrypted_id)}/`,
                                 method: "PUT",
                                 contentType: "application/json",
                                 dataType: "json",
                                 data: JSON.stringify(data)
-                            }).then(function (result) {
-                                // notify the data source that the request succeeded
-                                transportOptions.success(result);
                             }).catch(function (jqXHR, textStatus, errorThrown) {
                                 console.error("UPDATE FAIL", textStatus, errorThrown, jqXHR);
-                                // notify the data source that the request failed
                                 kendo.alert(`Er is iets fout gegaan tijdens het opslaan van het veld '${title}'.<br>` + (errorThrown ? errorThrown : 'Probeer het a.u.b. nogmaals, of neem contact op met ons.'));
-                                // notify the data source that the request failed
                                 transportOptions.error(jqXHR);
                             });
+
+                            transportOptions.success(result);
                         }
                     },
                     schema: {

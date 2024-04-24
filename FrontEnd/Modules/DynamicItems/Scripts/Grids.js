@@ -143,6 +143,8 @@ export class Grids {
      */
     async setupGridViewMode() {
         const initialProcess = `loadMainGrid_${Date.now()}`;
+        
+        const loader = $("#mainLoader");
 
         try {
             window.processing.addProcess(initialProcess);
@@ -496,6 +498,8 @@ export class Grids {
                             window.processing.removeProcess(process);
                         },
                         update: async function(transportOptions) {
+                            loader.addClass('loading');
+                            
                             const data = transportOptions.data;
                             
                             const updateRequestResult = await Wiser.api({
@@ -526,6 +530,8 @@ export class Grids {
                             }
 
                             transportOptions.success(updateRequestResult);
+
+                            loader.removeClass('loading');
                         }
                     },
                     schema: {

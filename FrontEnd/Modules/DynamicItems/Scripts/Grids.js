@@ -499,20 +499,112 @@ export class Grids {
                         },
                         update: async function(transportOptions) {
                             loader.addClass('loading');
-                            
+
                             const data = transportOptions.data;
                             
+                            const itemModel = {
+                                title: transportOptions.data.name,
+                                details: [],
+                                entityType: "{entityType}"
+                            };
+
+                            const encryptedId = data.encryptedId || data.encrypted_id || data.encryptedid;
+                            
+                            const nonFieldProperties = [
+                                "id",
+                                "published_environment",
+                                "publishedenvironment",
+                                "encrypted_id",
+                                "encryptedid",
+                                "entity_type",
+                                "entitytype",
+                                "link_id",
+                                "linkid",
+                                "link_type",
+                                "linktype",
+                                "linktypenumber",
+                                "added_on",
+                                "addedon",
+                                "added_by",
+                                "addedby",
+                                "changed_on",
+                                "changedon",
+                                "changed_by",
+                                "changedby"
+                            ];
+                            
+                            for (const key in data) {
+                                if (!data.hasOwnProperty(key) || nonFieldProperties.indexOf(key.toLowerCase()) > -1) {
+                                    continue;
+                                }
+
+                                if (key === "name" || key === "title") {
+                                    itemModel.title = data[key];
+                                    continue;
+                                } else if (key === "__ordering") {
+                                    itemModel.details.push({
+                                        "key": key,
+                                        "value": data[key],
+                                        "isLinkProperty": true,
+                                        "itemLinkId": data.linkId || data.linkid || data.link_id,
+                                        "linkType": options.linkTypeNumber || 0
+                                    });
+                                    
+                                    continue;
+                                }
+
+                                if (columns) {
+                                    for (let i = 0; i < columns.length; i++) {
+                                        const column = columns[i];
+                                        if ((column.field + "_input") !== key || !column.values || !column.values.length) {
+                                            continue;
+                                        }
+
+                                        for (let i2 = 0; i2 < column.values.length; i2++) {
+                                            const columnDataItem = column.values[i2];
+                                            if (data[key.replace("_input", "")] !== columnDataItem.value) {
+                                                continue;
+                                            }
+
+                                            data[key] = columnDataItem.text || value;
+                                        }
+                                    }
+                                }
+
+                                let isLinkProperty = false;
+                                if (columns && columns.length) {
+                                    for (let i = 0; i < columns.length; i++) {
+                                        if (columns[i].field !== key) {
+                                            continue;
+                                        }
+
+                                        isLinkProperty = columns[i].isLinkProperty === true;
+                                        break;
+                                    }
+                                }
+
+                                itemModel.details.push({
+                                    "key": key,
+                                    "value": data[key],
+                                    "isLinkProperty": isLinkProperty,
+                                    "itemLinkId": isLinkProperty ? (data.linkId || data.linkid || data.link_id) : 0,
+                                    "linkType": 0
+                                });
+                            }
+                            
                             const updateRequestResult = await Wiser.api({
-                                url: `${window.dynamicItems.settings.wiserApiRoot}items/${encodeURIComponent(data.encrypted_id)}/`,
+                                url: `${window.dynamicItems.settings.wiserApiRoot}items/${encodeURIComponent(encryptedId)}`,
                                 method: "PUT",
                                 contentType: "application/json",
                                 dataType: "json",
-                                data: JSON.stringify(data)
+                                data: JSON.stringify(itemModel)
                             }).catch(function (jqXHR, textStatus, errorThrown) {
                                 console.error("UPDATE FAIL", textStatus, errorThrown, jqXHR);
                                 kendo.alert(`Er is iets fout gegaan tijdens het opslaan van het veld '${title}'.<br>` + (errorThrown ? errorThrown : 'Probeer het a.u.b. nogmaals, of neem contact op met ons.'));
                                 transportOptions.error(jqXHR);
                             });
+                            
+                            console.log(updateRequestResult);
                             
                             const afterUpdateQueryId = gridViewSettings.afterUpdateQueryId;
                             if(afterUpdateQueryId) {

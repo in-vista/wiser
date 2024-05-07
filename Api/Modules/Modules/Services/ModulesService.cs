@@ -549,8 +549,13 @@ UNION
                 }
             }
 
-            // Everyone should always have the configuration module.
-            if (results.All(g => g.Value.All(m => m.Type != "Configuration")))
+            // Everyone should always have the configuration module
+            var addConfigModule = results.All(g => g.Value.All(m => m.Type != "Configuration"));
+            // But only if this is not explicitly set to permissions 0
+            if (dataTable.Rows.OfType<DataRow>().Any(row =>
+                    row["type"].Equals("Configuration") && Convert.ToInt32(row["permissions"]) == 0))
+                addConfigModule = false;
+            if (addConfigModule)
             {
                 var isPinned = pinnedModules.Contains(0);
                 var groupName = isPinned ? PinnedModulesGroupName : "Systeem";

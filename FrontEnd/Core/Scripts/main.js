@@ -209,7 +209,7 @@ class Main {
                 break;
             }
             case "OpenUserData": {
-                const encryptedUserId = await main.itemsService.encryptId(this.vueApp.user.id);
+                const encryptedUserId = this.vueApp.user.encryptedId;
                 this.vueApp.openModule({
                     moduleId: 0,
                     name: "Mijn gegevens",

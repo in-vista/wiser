@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -21,7 +22,13 @@ using Api.Modules.Files.Interfaces;
 using Api.Modules.Google.Interfaces;
 using Api.Modules.Items.Interfaces;
 using Api.Modules.Items.Models;
+using Api.Modules.Modules.Services;
+using Api.Modules.Permissions.Enums;
+using Api.Modules.Permissions.Models;
+using Api.Modules.Permissions.Services;
 using Api.Modules.Tenants.Interfaces;
+using Api.Modules.Tenants.Services;
+using GeeksCoreLibrary.Components.Account.Services;
 using GeeksCoreLibrary.Core.DependencyInjection.Interfaces;
 using GeeksCoreLibrary.Core.Enums;
 using GeeksCoreLibrary.Core.Exceptions;
@@ -35,6 +42,7 @@ using GeeksCoreLibrary.Modules.GclReplacements.Interfaces;
 using GeeksCoreLibrary.Modules.Languages.Interfaces;
 using GeeksCoreLibrary.Modules.Objects.Interfaces;
 using Google.Cloud.Translation.V2;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using MySqlConnector;
@@ -1901,6 +1909,45 @@ DELETE FROM {linkTablePrefix}{WiserTableNames.WiserItemLink} AS link WHERE (link
         /// <inheritdoc />
         public async Task<ServiceResult<string>> GetEncryptedIdAsync(ulong itemId, ClaimsIdentity identity)
         {
+            try
+            {
+                clientDatabaseConnection.ClearParameters();
+
+                string permissionQuery = @"
+                    SELECT
+	                    LEAST(COUNT(*), 1) AS has_permission
+                    FROM wiser_module module
+                    JOIN wiser_permission permission ON permission.`module_id` = module.`id`
+                    JOIN wiser_user_roles user_role ON user_role.`role_id` = permission.`role_id`
+                    WHERE
+	                    module.type = 'Search' AND
+	                    user_role.user_id = @userId;";
+                
+                clientDatabaseConnection.AddParameter("userId", IdentityHelpers.GetWiserUserId(identity));
+
+                DbDataReader reader = await clientDatabaseConnection.GetReaderAsync(permissionQuery);
+                bool hasPermission = await reader.ReadAsync() && reader.GetBoolean(0);
+
+                if (!hasPermission)
+                    return new ServiceResult<string>
+                    {
+                        StatusCode = HttpStatusCode.Forbidden,
+                        ErrorMessage = "Insufficient permissions"
+                    };
+            }
+            catch (Exception exception)
+            {
+                return new ServiceResult<string>
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    ErrorMessage = $"{exception.Message}:\n{exception.InnerException}"
+                };
+            }
+            finally
+            {
+                clientDatabaseConnection.ClearParameters();
+            }
+
             var tenant = await wiserTenantsService.GetSingleAsync(identity);
             var encryptionKey = tenant.ModelObject.EncryptionKey;
             return new ServiceResult<string>(itemId.ToString().EncryptWithAesWithSalt(encryptionKey, true));

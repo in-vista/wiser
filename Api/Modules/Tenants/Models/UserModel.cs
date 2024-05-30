@@ -141,5 +141,10 @@ namespace Api.Modules.Tenants.Models
         /// This will be used to update the time the user is active.
         /// </summary>
         public string EncryptedLoginLogId { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the indicator telling whether the user is allowed to perform a global search on items.
+        /// </summary>
+        public bool HasSearchPermissions { get; set; }
     }
 }

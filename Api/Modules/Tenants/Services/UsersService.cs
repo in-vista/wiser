@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
@@ -631,12 +632,28 @@ ORDER BY username.`value` ASC";
             var query = $@"SELECT IF(value = '1', TRUE, FALSE) AS totpEnabled FROM {WiserTableNames.WiserItemDetail} WHERE item_id = ?userId AND `key` = '{TotpEnabledKey}'";
             var dataTable = await clientDatabaseConnection.GetAsync(query);
             var totpEnabled = dataTable.Rows.Count > 0 && Convert.ToBoolean(dataTable.Rows[0]["totpEnabled"]);
+            
+            clientDatabaseConnection.ClearParameters();
+            string permissionsQuery = @"
+                    SELECT
+	                    LEAST(COUNT(*), 1) AS has_permission
+                    FROM wiser_module module
+                    JOIN wiser_permission permission ON permission.`module_id` = module.`id`
+                    JOIN wiser_user_roles user_role ON user_role.`role_id` = permission.`role_id`
+                    WHERE
+	                    module.type = 'Search' AND
+	                    user_role.user_id = ?userId;";
+            clientDatabaseConnection.AddParameter("userId", userId);
+            DbDataReader searchPermissionsReader = await clientDatabaseConnection.GetReaderAsync(permissionsQuery);
+            bool hasSearchPermissions = await searchPermissionsReader.ReadAsync() && searchPermissionsReader.GetBoolean(0);
+            await searchPermissionsReader.CloseAsync();
 
             var result = new UserModel
             {
                 EncryptedId = IdentityHelpers.GetWiserUserId(identity).ToString().EncryptWithAesWithSalt(gclSettings.DefaultEncryptionKey, true),
                 EncryptedTenantId = tenant.ModelObject.TenantId.ToString().EncryptWithAesWithSalt(gclSettings.DefaultEncryptionKey, true),
                 ZeroEncrypted = "0".EncryptWithAesWithSalt(encryptionKey, true),
+                HasSearchPermissions = hasSearchPermissions,
                 Id = userId,
                 EmailAddress = await usersService.GetUserEmailAddressAsync(userId),
                 CurrentBranchName = tenant.ModelObject.Name,

@@ -423,7 +423,10 @@ export class Windows {
                 const previouslySelectedTab = currentItemTabStrip.select().index();
                 await loadPopupContents(previouslySelectedTab);
             });
-            currentItemWindow.wrapper.find(".k-i-verwijderen").parent().click(this.onDeleteItemPopupClick.bind(this));
+
+            currentItemWindow.wrapper.find(".k-i-verwijderen").parent().click(async (event) => {
+                await this.onDeleteItemPopupClick(event, kendoComponent);
+            });
 
             currentItemWindow.element.find(".editMenu .undeleteItem").click(async (event) => {
                 await this.base.onUndeleteItemClick(event, encryptedItemId);
@@ -444,7 +447,7 @@ export class Windows {
      * The click event for the delete button of item popups.
      * @param {any} event The click event.
      */
-    async onDeleteItemPopupClick(event) {
+    async onDeleteItemPopupClick(event, kendoComponent) {
         event.preventDefault();
 
         await Wiser.showConfirmDialog("Weet u zeker dat u dit item wilt verwijderen?");
@@ -467,6 +470,9 @@ export class Windows {
 
             kendoWindow.close();
 
+            if (kendoComponent && kendoComponent.dataSource)
+                await kendoComponent.dataSource.read();
+            
             if (data.senderGrid) {
                 data.senderGrid.dataSource.read();
             }

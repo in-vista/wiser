@@ -209,7 +209,7 @@ class Main {
                 break;
             }
             case "OpenUserData": {
-                const encryptedUserId = await main.itemsService.encryptId(this.vueApp.user.id);
+                const encryptedUserId = this.vueApp.user.encryptedId;
                 this.vueApp.openModule({
                     moduleId: 0,
                     name: "Mijn gegevens",
@@ -590,7 +590,10 @@ class Main {
                     // Open Wiser ID prompt when the user presses CTRL+O.
                     if (event.ctrlKey && event.key === "o") {
                         event.preventDefault();
-                        this.openWiserIdPrompt();
+                        
+                        const hasSearchPermissions = this.user.hasSearchPermissions;
+                        if(hasSearchPermissions)
+                            this.openWiserIdPrompt();
                     }
                     // Open MarkerToScreen (Bug reporting) prompt when the user presses CTRL+B.
                     if (event.ctrlKey && event.key === "b") {

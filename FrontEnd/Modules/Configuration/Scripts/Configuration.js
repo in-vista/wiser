@@ -73,6 +73,7 @@ const moduleSettings = {
             this.settings.userId = userData.encryptedId;
             this.settings.plainUserId = userData.id;
             this.settings.zeroEncrypted = userData.zeroEncrypted;
+            this.settings.hasSearchPermissions = userData.hasSearchPermissions;
             
             await this.toggleModules();
             
@@ -200,6 +201,9 @@ const moduleSettings = {
 
             // Modules that are only available for admins.
             $(`.group-item[data-requires-admin='true']`).toggleClass("hidden", !this.settings.adminAccountLoggedIn);
+            
+            // Hide modules if they require the user to have the global search permissions.
+            $(`.group-item[data-requires-search-permissions='true']`).toggleClass('hidden', !this.settings.hasSearchPermissions);
         }
     }
 
